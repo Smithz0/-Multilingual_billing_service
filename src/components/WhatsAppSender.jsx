@@ -23,11 +23,27 @@ export default function WhatsAppSender({ items }) {
     if (items.length === 0) return '';
 
     const lines = items.map(
-      (item) => `${item.itemName} (${item.quantity}) - ₹${item.total.toFixed(2)}`
+      (item) => `${item.itemName} | ${item.quantity} | ₹${item.total.toFixed(2)}`
     );
     const grandTotal = items.reduce((sum, item) => sum + item.total, 0);
 
-    return `🧾 *${t('groceryBill')}*\n━━━━━━━━━━━━━━━\n${lines.join('\n')}\n━━━━━━━━━━━━━━━\n*${t('total')}: ₹${grandTotal.toFixed(2)}*`;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN');
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
+    return `🧾 *NEW MANIKANDA STORES*
+
+📅 Date: ${dateStr}
+🕒 Time: ${timeStr}
+
+Items:
+Item Name Qty Total
+${lines.join('\n')}
+
+💰 Grand Total: ₹${grandTotal.toFixed(2)}
+
+Thank you for shopping with us 🙏
+Visit Again!`;
   };
 
   const sendToWhatsApp = () => {
