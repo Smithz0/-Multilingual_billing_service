@@ -17,6 +17,7 @@ export default function VoiceInput({ onItemAdd }) {
   const [transcript, setTranscript] = useState('');
   const [supported, setSupported] = useState(true);
   const recognitionRef = useRef(null);
+  const isIntentionalStopRef = useRef(false);
 
   useEffect(() => {
     // Check browser support for Web Speech API
@@ -27,7 +28,7 @@ export default function VoiceInput({ onItemAdd }) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true; // Use continuous mode to keep listening
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
@@ -53,27 +54,42 @@ export default function VoiceInput({ onItemAdd }) {
         if (parsed) {
           playSuccess();
           onItemAdd(parsed);
-          setTranscript('');
+          // Set timeout to clear transcript visually
+          setTimeout(() => setTranscript(''), 1500);
         } else {
           playError();
+          setTimeout(() => setTranscript(''), 1500);
         }
       }
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      playError();
+      if (event.error !== 'no-speech') {
+        setIsListening(false);
+        playError();
+      }
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      // If the browser stopped it automatically (not a user click), restart it
+      if (!isIntentionalStopRef.current) {
+        try {
+          recognition.start();
+        } catch (e) {
+          // Ignore if already started
+          setIsListening(false);
+        }
+      } else {
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current = recognition;
 
     return () => {
       if (recognitionRef.current) {
+        isIntentionalStopRef.current = true;
         recognitionRef.current.abort();
       }
     };
@@ -83,13 +99,19 @@ export default function VoiceInput({ onItemAdd }) {
     if (!recognitionRef.current) return;
 
     if (isListening) {
+      isIntentionalStopRef.current = true; // Intentionally stopped by user
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
+      isIntentionalStopRef.current = false;
       // Set the language for recognition
       recognitionRef.current.lang = speechLanguageCodes[language] || 'en-IN';
       setTranscript('');
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        // Handle race conditions where it might already be started
+      }
       setIsListening(true);
     }
   };
