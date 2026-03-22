@@ -20,7 +20,7 @@ import { convertWordsToNumbers } from './numberMapping';
  * @param {string} lang - Language code for number word conversion
  * @returns {object|null} - Parsed item data or null if parsing fails
  */
-export function parseVoiceInput(transcript, lang = 'en') {
+export function parseVoiceInput(transcript, lang = 'en', matchItem = null) {
   if (!transcript || transcript.trim() === '') return null;
 
   // Step 1: Convert number words to digits
@@ -68,15 +68,20 @@ export function parseVoiceInput(transcript, lang = 'en') {
   // Step 5: All tokens that are NOT the last two numbers form the item name
   const usedIndices = new Set([totalInfo.index, quantityInfo.index]);
   const nameTokens = tokens.filter((_, i) => !usedIndices.has(i));
-  const itemName = nameTokens.join(' ').trim();
+  const rawItemName = nameTokens.join(' ').trim();
 
-  if (!itemName) return null;
+  if (!rawItemName) return null;
+
+  // Auto-correct item name if a match strategy is provided
+  const itemName = matchItem
+    ? matchItem(rawItemName)
+    : rawItemName.charAt(0).toUpperCase() + rawItemName.slice(1); // Standard capitalization fallback
 
   // Step 6: Calculate rate
   const rate = Math.round((total / quantity) * 100) / 100;
 
   return {
-    itemName: itemName.charAt(0).toUpperCase() + itemName.slice(1), // Capitalize first letter
+    itemName,
     quantity,
     rate,
     total,

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useLanguage } from './hooks/useLanguage';
+import { useItemMemory } from './hooks/useItemMemory';
 import VoiceInput from './components/VoiceInput';
 import BarcodeScanner from './components/BarcodeScanner';
 import BillingTable from './components/BillingTable';
@@ -21,6 +22,9 @@ export default function App() {
   const [manualQty, setManualQty] = useState('');
   const [manualPrice, setManualPrice] = useState('');
 
+  // Item Memory System
+  const { recordItem, matchItem, topItems, clearMemory } = useItemMemory();
+
   // Apply dark mode class to html element
   if (darkMode) {
     document.documentElement.classList.add('dark');
@@ -32,6 +36,9 @@ export default function App() {
    * Add item to bill. Auto-merges duplicates (same item name → increment quantity).
    */
   const handleAddItem = useCallback((newItem) => {
+    // Record item in smart memory
+    recordItem(newItem.itemName);
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
         (item) => item.itemName.toLowerCase() === newItem.itemName.toLowerCase()
@@ -53,7 +60,7 @@ export default function App() {
       playItemAdded();
       return [...prevItems, newItem];
     });
-  }, [setItems]);
+  }, [setItems, recordItem]);
 
   const handleUpdateItem = useCallback((index, updatedItem) => {
     setItems((prev) => {
@@ -146,7 +153,7 @@ export default function App() {
         <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex flex-col items-center gap-4">
             {/* Voice Input */}
-            <VoiceInput onItemAdd={handleAddItem} />
+            <VoiceInput onItemAdd={handleAddItem} matchItem={matchItem} />
 
             {/* Action Buttons */}
             <div className="flex gap-3 w-full">
@@ -179,9 +186,33 @@ export default function App() {
               </button>
             </div>
 
-            {/* Manual Entry Form */}
+            {/* Manual Entry Form & Top Items */}
             {showManualEntry && (
-              <div className="w-full space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <div className="w-full space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {/* Top Items Suggestions */}
+                {topItems.length > 0 && (
+                  <div>
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                      Frequently Billed Items
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {topItems.map((memItem, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setManualName(memItem.name)}
+                          className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200
+                            rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30
+                            hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800
+                            transition-colors"
+                        >
+                          {memItem.name} <span className="text-xs opacity-50 ml-1">({memItem.frequency})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Form */}
                 <div className="grid grid-cols-3 gap-2">
                   <input
                     type="text"
@@ -217,7 +248,7 @@ export default function App() {
                   <button
                     onClick={handleManualAdd}
                     className="py-3 bg-emerald-500 text-white font-semibold rounded-xl
-                      hover:bg-emerald-600 active:scale-95 transition-all"
+                      hover:bg-emerald-600 active:scale-95 transition-all w-full col-span-1"
                   >
                     {t('add')}
                   </button>
@@ -265,8 +296,18 @@ export default function App() {
       />
 
       {/* Footer */}
-      <footer className="text-center py-4 text-xs text-gray-400 dark:text-gray-600">
-        Grocery Billing App • Offline-First POS
+      <footer className="text-center py-6 flex flex-col items-center gap-3 text-xs text-gray-400 dark:text-gray-600">
+        <p>Grocery Billing App • Offline-First POS</p>
+        <button 
+          onClick={() => {
+            if (window.confirm('Clear all smart item memory? This cannot be undone.')) {
+              clearMemory();
+            }
+          }}
+          className="text-gray-400 hover:text-red-500 transition-colors underline decoration-dotted underline-offset-4"
+        >
+          Reset Item Memory
+        </button>
       </footer>
     </div>
   );

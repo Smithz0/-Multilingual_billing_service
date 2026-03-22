@@ -11,7 +11,7 @@ import { playSuccess, playError } from '../utils/soundUtils';
  * Props:
  *   onItemAdd(item) - callback when a valid item is parsed from speech
  */
-export default function VoiceInput({ onItemAdd }) {
+export default function VoiceInput({ onItemAdd, matchItem }) {
   const { language, t } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -50,7 +50,7 @@ export default function VoiceInput({ onItemAdd }) {
       // When we get a final result, parse it
       if (finalTranscript) {
         setTranscript(finalTranscript);
-        const parsed = parseVoiceInput(finalTranscript, language);
+        const parsed = parseVoiceInput(finalTranscript, language, matchItem);
         if (parsed) {
           playSuccess();
           onItemAdd(parsed);

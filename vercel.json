@@ -1,0 +1,5 @@
+{
+  "installCommand": "npm install --include=dev && chmod +x node_modules/.bin/vite node_modules/.bin/tailwindcss",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}
