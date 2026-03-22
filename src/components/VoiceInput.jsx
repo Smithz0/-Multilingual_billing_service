@@ -66,6 +66,7 @@ export default function VoiceInput({ onItemAdd, matchItem }) {
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
       if (event.error !== 'no-speech') {
+        isIntentionalStopRef.current = true; // Prevent infinite restart loops on error
         setIsListening(false);
         playError();
       }
