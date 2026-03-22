@@ -3,15 +3,16 @@ import { convertWordsToNumbers } from './numberMapping';
 /**
  * Parse voice input transcript into structured item data.
  * 
- * Expected format: "item name + quantity + total price"
+ * Expected formats:
+ *   "quantity + item name + total price" OR "item name + quantity + total price"
  * Examples:
+ *   "2 apple 120"       → { itemName: "apple", quantity: 2, total: 120, rate: 60 }
  *   "apple 2 120"       → { itemName: "apple", quantity: 2, total: 120, rate: 60 }
- *   "rice bag 5 250"    → { itemName: "rice bag", quantity: 5, total: 250, rate: 50 }
- *   "milk rendu 90"     → { itemName: "milk", quantity: 2, total: 90, rate: 45 }
+ *   "5 rice bag 250"    → { itemName: "rice bag", quantity: 5, total: 250, rate: 50 }
  * 
  * Logic:
+ *   - First number = quantity
  *   - Last number = total price
- *   - Second-to-last number = quantity
  *   - All remaining words = item name
  *   - rate = total / quantity
  * 
@@ -57,9 +58,9 @@ export function parseVoiceInput(transcript, lang = 'en') {
     return null;
   }
 
-  // Step 4: Extract total (last number) and quantity (second-to-last number)
+  // Step 4: Extract quantity (first number) and total (last number)
+  const quantityInfo = numberPositions[0];
   const totalInfo = numberPositions[numberPositions.length - 1];
-  const quantityInfo = numberPositions[numberPositions.length - 2];
 
   const total = totalInfo.value;
   const quantity = quantityInfo.value;
